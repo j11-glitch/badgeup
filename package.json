@@ -9,17 +9,24 @@
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "typecheck": "tsc -b",
-    "deploy": "npm run build && npx firebase-tools deploy --only hosting"
+    "deploy": "npm run build && npx firebase-tools deploy --only hosting",
+    "test": "vitest run src",
+    "test:rules": "npx --yes firebase-tools emulators:exec --only firestore --project demo-badgeup \"vitest run tests\"",
+    "deploy:rules": "npx --yes firebase-tools deploy --only firestore:rules,firestore:indexes",
+    "local": "npx --yes firebase-tools emulators:exec --only firestore,auth --project demo-badgeup \"node scripts/seed-emulator.mjs && VITE_USE_EMULATORS=1 vite --port 5178 --strictPort\""
   },
   "dependencies": {
+    "firebase": "^12.19.0",
     "react": "^19.3.0",
     "react-dom": "^19.3.0"
   },
   "devDependencies": {
+    "@firebase/rules-unit-testing": "^5.0.2",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "@vitejs/plugin-react": "^6.1.1",
     "typescript": "^7.0.2",
-    "vite": "^8.3.1"
+    "vite": "^8.3.1",
+    "vitest": "^4.1.11"
   }
 }
