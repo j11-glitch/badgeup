@@ -1,0 +1,100 @@
+rules_version = '2';
+
+// Roles:
+//   superuser  one account, created by hand in the console (never from the app);
+//              everything an admin can do, plus adding and removing admins.
+//   admin      edits badges, adds and deletes users, awards badges.
+//   visitor    no login; can read badges and users.
+// Staff are stored in /staff/{email} (lower-case email as document id).
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedInEmail() {
+      return request.auth.token.email.lower();
+    }
+
+    function staffPath() {
+      return /databases/$(database)/documents/staff/$(signedInEmail());
+    }
+
+    // Google accounts have verified emails; requiring it stops unverified email sign-ups.
+    function isStaff() {
+      return request.auth != null
+        && request.auth.token.email_verified == true
+        && exists(staffPath());
+    }
+
+    function isSuperuser() {
+      return isStaff() && get(staffPath()).data.role == 'superuser';
+    }
+
+    function isText(value, min, max) {
+      return value is string && value.size() >= min && value.size() <= max;
+    }
+
+    function isValidColor(value) {
+      return value is string && value.matches('^#[0-9a-f]{6}$');
+    }
+
+    function isValidBadge(data) {
+      return isText(data.name, 1, 40)
+        && isText(data.description, 0, 200)
+        && isText(data.emoji, 1, 8)
+        && isValidColor(data.color)
+        && data.updatedAt == request.time;
+    }
+
+    // ---- Staff (admins and the superuser): private, managed by the superuser ----
+    match /staff/{email} {
+      allow read: if isStaff();
+      // The superuser adds plain admins only; nobody can create another superuser here.
+      allow create: if isSuperuser()
+        && email == email.lower()
+        && request.resource.data.keys().hasOnly(['role', 'addedBy', 'addedAt'])
+        && request.resource.data.role == 'admin'
+        && request.resource.data.addedBy == signedInEmail()
+        && request.resource.data.addedAt == request.time;
+      // Admins can be removed; the superuser document cannot.
+      allow delete: if isSuperuser() && resource.data.role == 'admin';
+      allow update: if false;
+    }
+
+    // ---- Badges: public, edited by staff ----
+    match /badges/{badgeId} {
+      allow read: if true;
+      allow create: if isStaff()
+        && request.resource.data.keys().hasOnly(['name', 'description', 'emoji', 'color', 'createdAt', 'updatedAt'])
+        && isValidBadge(request.resource.data)
+        && request.resource.data.createdAt == request.time;
+      allow update: if isStaff()
+        && request.resource.data.keys().hasOnly(['name', 'description', 'emoji', 'color', 'createdAt', 'updatedAt'])
+        && request.resource.data.createdAt == resource.data.createdAt
+        && isValidBadge(request.resource.data);
+      allow delete: if isStaff();
+    }
+
+    // ---- Users (people who receive badges; they do not log in): public, managed by staff ----
+    match /users/{userId} {
+      allow read: if true;
+      allow create: if isStaff()
+        && request.resource.data.keys().hasOnly(['name', 'badgeIds', 'createdAt', 'updatedAt'])
+        && isText(request.resource.data.name, 1, 60)
+        && request.resource.data.badgeIds == []
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.updatedAt == request.time;
+      allow update: if isStaff()
+        && request.resource.data.keys().hasOnly(['name', 'badgeIds', 'createdAt', 'updatedAt'])
+        && isText(request.resource.data.name, 1, 60)
+        && request.resource.data.badgeIds is list
+        && request.resource.data.badgeIds.size() <= 100
+        && request.resource.data.createdAt == resource.data.createdAt
+        && request.resource.data.updatedAt == request.time;
+      allow delete: if isStaff();
+    }
+
+    // ---- Everything else stays locked ----
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
