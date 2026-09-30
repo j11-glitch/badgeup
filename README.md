@@ -38,6 +38,17 @@ npm run deploy
 The Firebase project is `badgeup-2d0ee` (set in `.firebaserc`); the site is live at
 https://badgeup-2d0ee.web.app.
 
+### Automatic deploys (GitHub Actions)
+
+- **Merge to `main`** → `.github/workflows/firebase-hosting-merge.yml` builds and deploys to
+  the live site.
+- **Pull request** → `.github/workflows/firebase-hosting-pull-request.yml` deploys a temporary
+  preview (expires after 7 days) and comments the preview URL on the PR.
+
+Both use the `FIREBASE_SERVICE_ACCOUNT_BADGEUP_2D0EE` repository secret (a service account
+created by `firebase init hosting:github`). The page footer shows the commit a deploy was
+built from.
+
 ## CI
 
 `.github/workflows/ci.yml` builds every pull request and every push to `main`.
