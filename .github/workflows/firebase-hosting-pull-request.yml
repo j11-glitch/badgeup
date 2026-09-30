@@ -20,8 +20,20 @@ jobs:
         with:
           node-version: 22
           cache: npm
+      - name: Check Firebase config secrets
+        env:
+          FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY }}
+          FIREBASE_APP_ID: ${{ secrets.VITE_FIREBASE_APP_ID }}
+        run: |
+          if [ -z "$FIREBASE_API_KEY" ] || [ -z "$FIREBASE_APP_ID" ]; then
+            echo "::error::Set the repository secrets VITE_FIREBASE_API_KEY and VITE_FIREBASE_APP_ID (gh secret set -f .env.local)."
+            exit 1
+          fi
       - run: npm ci && npm run build
         env:
+          # Firebase web config from repository secrets of the same name (see .env.example).
+          VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY }}
+          VITE_FIREBASE_APP_ID: ${{ secrets.VITE_FIREBASE_APP_ID }}
           VITE_COMMIT_SHA: ${{ github.event.pull_request.head.sha }}
       - uses: FirebaseExtended/action-hosting-deploy@v0
         with:

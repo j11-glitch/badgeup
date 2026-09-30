@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { addAdmin, removeAdmin, watchStaff } from '../../data/staff'
 import { normalizeEmail } from '../../domain/validation'
 import { useLive } from '../../useLive'
+import { nb } from '../../i18n/nb'
 
 /** Superuser only: add and remove admins by Google email. */
 export function StaffPanel({ myEmail }: { myEmail: string }) {
@@ -19,27 +20,27 @@ export function StaffPanel({ myEmail }: { myEmail: string }) {
       await addAdmin(clean, myEmail)
       setEmail('')
     } catch {
-      setError('Could not add the admin.')
+      setError(nb.addAdminFailed)
     }
   }
 
   async function remove(adminEmail: string) {
-    if (!window.confirm(`Remove admin access for ${adminEmail}?`)) return
+    if (!window.confirm(nb.removeAdminConfirm(adminEmail))) return
     try {
       await removeAdmin(adminEmail)
     } catch {
-      setError('Could not remove the admin.')
+      setError(nb.removeAdminFailed)
     }
   }
 
   return (
     <>
       <section className="card">
-        <h2>New admin</h2>
-        <p className="muted small">Admins sign in with Google, so use the email of their Google account.</p>
+        <h2>{nb.newAdmin}</h2>
+        <p className="muted small">{nb.newAdminHint}</p>
         <form className="inline-form" onSubmit={add}>
           <label htmlFor="admin-email" className="sr-only">
-            Email
+            {nb.email}
           </label>
           <input
             id="admin-email"
@@ -50,34 +51,34 @@ export function StaffPanel({ myEmail }: { myEmail: string }) {
             onChange={(event) => setEmail(event.target.value)}
           />
           <button type="submit" className="button" disabled={!clean || exists}>
-            Add admin
+            {nb.addAdmin}
           </button>
         </form>
-        {exists && <p className="muted small">That email already has access.</p>}
+        {exists && <p className="muted small">{nb.alreadyAccess}</p>}
       </section>
 
       <section className="card">
-        <h2>People with access</h2>
+        <h2>{nb.peopleWithAccess}</h2>
         {error && (
           <p className="error" role="alert">
             {error}
           </p>
         )}
         {staff.data === null ? (
-          <p className="muted">Loading...</p>
+          <p className="muted">{nb.loading}</p>
         ) : (
           <ul className="admin-list">
             {staff.data.map((member) => (
               <li key={member.email} className="admin-item">
                 <span className="admin-item__text">{member.email}</span>
-                <span className="role">{member.role}</span>
+                <span className="role">{nb.roles[member.role]}</span>
                 {member.role === 'admin' && (
                   <button
                     type="button"
                     className="button button--danger button--small"
                     onClick={() => void remove(member.email)}
                   >
-                    Remove
+                    {nb.remove}
                   </button>
                 )}
               </li>

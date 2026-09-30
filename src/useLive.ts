@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { nb } from './i18n/nb'
 
 type Watch<T> = (onData: (data: T) => void, onError: (e: Error) => void) => () => void
 
@@ -13,7 +14,7 @@ export function useLive<T>(watch: Watch<T>): { data: T | null; error: string | n
           setData(next)
           setError(null)
         },
-        () => setError('Could not load data.'),
+        () => setError(nb.loadFailed),
       ),
     [watch],
   )
