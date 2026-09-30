@@ -9,11 +9,11 @@ import { useEffect, useState } from 'react'
 import { watchRole, type StaffRole } from '../../data/staff'
 import { auth, USING_EMULATORS } from '../../firebase'
 import { useAuthUser } from '../../useAuthUser'
-import { BadgesPanel } from './BadgesPanel'
+import { ChildrenPanel } from './ChildrenPanel'
 import { StaffPanel } from './StaffPanel'
-import { UsersPanel } from './UsersPanel'
+import { nb } from '../../i18n/nb'
 
-type Tab = 'badges' | 'users' | 'admins'
+type Tab = 'children' | 'admins'
 
 async function signInWithGoogle() {
   const provider = new GoogleAuthProvider()
@@ -42,7 +42,7 @@ export function AdminApp() {
   const email = user?.email?.toLowerCase() ?? null
   // undefined = still checking the role of this email
   const [role, setRole] = useState<StaffRole | null | undefined>(undefined)
-  const [tab, setTab] = useState<Tab>('badges')
+  const [tab, setTab] = useState<Tab>('children')
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
@@ -52,17 +52,17 @@ export function AdminApp() {
   }, [email])
 
   if (user === undefined || (user && role === undefined)) {
-    return <p className="muted">Checking your access...</p>
+    return <p className="muted">{nb.checkingAccess}</p>
   }
 
   if (!user) {
     return (
       <section className="card card--narrow">
-        <h2>Admin sign-in</h2>
-        <p className="muted">Admins sign in with the Google account they were added with.</p>
+        <h2>{nb.signInTitle}</h2>
+        <p className="muted">{nb.signInText}</p>
         {USING_EMULATORS && (
           <div className="notice">
-            <p className="notice__title">Local test mode: sign in as a test account</p>
+            <p className="notice__title">{nb.testSignIn}</p>
             <div className="quick-signin">
               {LOCAL_TEST_ACCOUNTS.map((account) => (
                 <button
@@ -71,7 +71,7 @@ export function AdminApp() {
                   className="button button--small"
                   onClick={() =>
                     signInWithEmailAndPassword(auth, account.email, LOCAL_TEST_PASSWORD).catch(() =>
-                      setError('Test sign-in failed. Is `npm run local` running?'),
+                      setError(nb.testSignInFailed),
                     )
                   }
                 >
@@ -84,9 +84,9 @@ export function AdminApp() {
         <button
           type="button"
           className="button"
-          onClick={() => signInWithGoogle().catch(() => setError('Sign-in failed. Please try again.'))}
+          onClick={() => signInWithGoogle().catch(() => setError(nb.signInFailed))}
         >
-          Sign in with Google
+          {nb.signInWithGoogle}
         </button>
         {error && (
           <p className="error" role="alert">
@@ -100,35 +100,34 @@ export function AdminApp() {
   if (!role) {
     return (
       <section className="card card--narrow">
-        <h2>No admin access</h2>
+        <h2>{nb.noAccessTitle}</h2>
         <p>
-          <strong>{user.email}</strong> is not an admin. Ask the superuser to add this email.
+          <strong>{user.email}</strong> {nb.noAccessText}
         </p>
         <button type="button" className="button button--ghost" onClick={() => signOut(auth)}>
-          Sign out
+          {nb.signOut}
         </button>
       </section>
     )
   }
 
   const tabs: { id: Tab; label: string }[] = [
-    { id: 'badges', label: 'Badges' },
-    { id: 'users', label: 'Users' },
-    ...(role === 'superuser' ? [{ id: 'admins' as const, label: 'Admins' }] : []),
+    { id: 'children', label: nb.tabChildren },
+    ...(role === 'superuser' ? [{ id: 'admins' as const, label: nb.tabAdmins }] : []),
   ]
 
   return (
     <>
       <div className="admin-bar">
         <span>
-          Signed in as <strong>{user.email}</strong> <span className="role">{role}</span>
+          {nb.signedInAs} <strong>{user.email}</strong> <span className="role">{nb.roles[role]}</span>
         </span>
         <button type="button" className="button button--ghost button--small" onClick={() => signOut(auth)}>
-          Sign out
+          {nb.signOut}
         </button>
       </div>
 
-      <nav className="tabs" aria-label="Admin sections">
+      <nav className="tabs" aria-label={nb.adminSections}>
         {tabs.map((t) => (
           <button key={t.id} type="button" aria-current={tab === t.id} onClick={() => setTab(t.id)}>
             {t.label}
@@ -136,8 +135,7 @@ export function AdminApp() {
         ))}
       </nav>
 
-      {tab === 'badges' && <BadgesPanel />}
-      {tab === 'users' && <UsersPanel />}
+      {tab === 'children' && <ChildrenPanel />}
       {tab === 'admins' && role === 'superuser' && email && <StaffPanel myEmail={email} />}
     </>
   )
