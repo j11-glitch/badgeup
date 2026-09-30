@@ -6,3 +6,7 @@ dist
 # Firebase CLI cache and debug logs
 .firebase/
 *-debug.log*
+# Local environment (Firebase config values); never commit
+.env
+.env.*
+!.env.example
