@@ -35,7 +35,8 @@ Then deploy:
 npm run deploy
 ```
 
-The Firebase project is set in `.firebaserc`.
+The Firebase project is `badgeup-2d0ee` (set in `.firebaserc`); the site is live at
+https://badgeup-2d0ee.web.app.
 
 ## CI
 
